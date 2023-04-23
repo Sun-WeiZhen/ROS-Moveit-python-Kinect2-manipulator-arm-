@@ -1,0 +1,116 @@
+import math
+import numpy as np
+import scipy.linalg as la
+
+def move_endEffector(axis, dist, x, y, z, rx, ry, rz):
+    Rx = np.mat([[1, 0, 0], [0, math.cos(rx), -math.sin(rx)], [0, math.sin(rx), math.cos(rx)]])
+    Ry = np.mat([[math.cos(ry), 0, math.sin(ry)], [0, 1, 0], [-math.sin(ry), 0, math.cos(ry)]])
+    Rz = np.mat([[math.cos(rz), -math.sin(rz), 0], [math.sin(rz), math.cos(rz), 0], [0, 0, 1]])
+    R = Rz * Ry * Rx
+
+    unitVector = np.mat([[0], [0], [1]])
+    T = R*unitVector
+
+    pose_move = [0.0] * 6
+    if axis == "x":
+    	pose_move[0]=dist
+    if axis == "y":
+    	pose_move[1]=dist
+    if axis == "z":
+    	pose_move[2]=dist
+    T_move= getT_fromPose(pose_move[0],pose_move[1],pose_move[2],pose_move[3],pose_move[4],pose_move[5])
+	
+    T_now = getT_fromPose(x, y, z, rx, ry, rz)
+    T_moveTarget = T_now*T_move
+    pose = getPose_fromT(T_moveTarget)
+    output_x = pose[0]
+    output_y = pose[1]
+    output_z = pose[2]
+    rx = pose[3]
+    ry = pose[4]
+    rz = pose[5]
+
+    return output_x, output_y, output_z, rx, ry, rz
+
+def rotate_endEffector(axis, angle, x, y, z, rx, ry, rz):
+    Rx = np.mat([[1, 0, 0], [0, math.cos(rx), -math.sin(rx)], [0, math.sin(rx), math.cos(rx)]])
+    Ry = np.mat([[math.cos(ry), 0, math.sin(ry)], [0, 1, 0], [-math.sin(ry), 0, math.cos(ry)]])
+    Rz = np.mat([[math.cos(rz), -math.sin(rz), 0], [math.sin(rz), math.cos(rz), 0], [0, 0, 1]])
+    R = Rz * Ry * Rx
+
+    unitVector = np.mat([[0], [0], [1]])
+    T = R*unitVector
+
+    pose_rotate = [0.0] * 6
+    if axis == "x":
+    	pose_rotate[3]=angle/180.0*math.pi
+    if axis == "y":
+    	pose_rotate[4]=angle/180.0*math.pi
+    if axis == "z":
+    	pose_rotate[5]=angle/180.0*math.pi
+ 
+    T_rotate= getT_fromPose(pose_rotate[0],pose_rotate[1],pose_rotate[2],pose_rotate[3],pose_rotate[4],pose_rotate[5])
+	
+    T_now = getT_fromPose(x, y, z, rx, ry, rz)
+    T_rotateTarget = T_now*T_rotate
+    pose = getPose_fromT(T_rotateTarget)
+    output_x = pose[0]
+    output_y = pose[1]
+    output_z = pose[2]
+    rx = pose[3]
+    ry = pose[4]
+    rz = pose[5]
+
+    return output_x, output_y, output_z, rx, ry, rz
+
+
+
+def getPose_fromT(T):
+	x = T[0, 3] 
+	y = T[1, 3]
+	z = T[2, 3]
+	rx = math.atan2(T[2, 1], T[2, 2])
+	ry = math.asin(-T[2, 0]) 
+	rz = math.atan2(T[1, 0], T[0, 0])
+
+	return x, y, z, rx, ry, rz
+
+
+def getT_fromPose(x, y, z, rx, ry, rz):
+	Rx = np.mat([[1, 0, 0], [0, math.cos(rx), -math.sin(rx)], [0, math.sin(rx), math.cos(rx)]])
+	Ry = np.mat([[math.cos(ry), 0, math.sin(ry)], [0, 1, 0], [-math.sin(ry), 0, math.cos(ry)]])
+	Rz = np.mat([[math.cos(rz), -math.sin(rz), 0], [math.sin(rz), math.cos(rz), 0], [0, 0, 1]])
+	t = np.mat([[x], [y], [z]])
+
+	R = Rz * Ry * Rx
+	R_ = np.array(R)
+	t_ = np.array(t)
+	T_1 = np.append(R_, t_, axis = 1)
+	
+	zero = np.mat([0,0,0,1])
+	T_2 = np.array(zero) 
+	
+	T = np.append(T_1, T_2, axis = 0)
+	T = np.mat(T)
+
+	return T
+
+#Randomly set a pose
+pose_now = [-0.072944147641399, -0.06687830562048944, 0.4340418493881254, -0.2207496117519063, 0.0256862005614321, 0.1926014162476009]
+
+# Obtain the pose of the target position
+# Move 5cm along the x-axis
+pose_move_x = move_endEffector("x", 0.05, pose_now[0], pose_now[1], pose_now[2], pose_now[3], pose_now[4], pose_now[5])
+print(pose_move_x)
+
+# Move along the y-axis -5cm
+pose_move_y = move_endEffector("y", -0.05, pose_now[0], pose_now[1], pose_now[2], pose_now[3], pose_now[4], pose_now[5])
+print(pose_move_y)
+
+# Rotate 0.05 radians along the z-axis
+pose_rotate_z = rotate_endEffector("z", 0.05, pose_now[0], pose_now[1], pose_now[2], pose_now[3], pose_now[4], pose_now[5])
+print(pose_rotate_z)
+
+# Rotate along the x-axis by -0.05 radians
+pose_rotate_x = rotate_endEffector("x", -0.05, pose_now[0], pose_now[1], pose_now[2], pose_now[3], pose_now[4], pose_now[5])
+print(pose_rotate_x)
